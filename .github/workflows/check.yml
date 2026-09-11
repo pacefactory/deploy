@@ -1,0 +1,61 @@
+# Lints install.sh and exercises its argument / environment parsing without
+# Docker. Also fails when install.sh.sha256 is stale: the checksum file is
+# committed by hand (regenerate with `sha256sum install.sh > install.sh.sha256`)
+# rather than rewritten by CI, so the repository never needs a bot commit.
+name: check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: shellcheck and syntax
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y -q shellcheck
+          bash -n install.sh
+          shellcheck install.sh
+
+      - name: checksum is current
+        run: sha256sum -c install.sh.sha256
+
+      - name: dry-run smoke test (no Docker)
+        run: |
+          set -euo pipefail
+          # defaults
+          out="$(HOME=/home/pf bash install.sh --dry-run)"
+          grep -q 'image        : pacefactory/deployment-scripts:latest' <<<"$out"
+          grep -q 'install dir  : /home/pf/scv2/git_clones/deployment-scripts' <<<"$out"
+          grep -q 'token file   : /home/pf/scv2/docker_oat.sh (absent)' <<<"$out"
+          grep -q 'DOCKER_OAT   : unset' <<<"$out"
+          grep -q 'dry run: nothing executed' <<<"$out"
+          # environment overrides, token never printed
+          out="$(PF_INSTALL_DIR=/opt/pf PF_IMAGE=pacefactory/other PF_RELEASE=v1.2.3 PF_REMOVE_GIT=true PF_OAT_FILE=/opt/oat.sh DOCKER_OAT=dckr_oat_secretvalue bash install.sh --dry-run)"
+          grep -q 'image        : pacefactory/other:v1.2.3' <<<"$out"
+          grep -q 'install dir  : /opt/pf' <<<"$out"
+          grep -q 'remove .git  : true' <<<"$out"
+          grep -q 'DOCKER_OAT   : set (not shown)' <<<"$out"
+          ! grep -q 'secretvalue' <<<"$out"
+          # piped invocation, as curl | bash delivers it
+          bash -s -- --dry-run < install.sh | grep -q 'dry run: nothing executed'
+          # invalid configuration is rejected
+          ! PF_REMOVE_GIT=maybe bash install.sh --dry-run
+          ! PF_INSTALL_DIR=relative/path bash install.sh --dry-run
+          ! bash install.sh --dry-run positional-arg
+          # a truncated download executes nothing (main is the last line)
+          if head -c 3000 install.sh | bash 2>/dev/null; then echo "truncated script should fail"; exit 1; fi
+          ! head -c 3000 install.sh | bash 2>&1 | grep -q 'pacefactory install'
+          bash install.sh --help | grep -q 'curl -fsSL https://get.pacefactory.dev/install.sh'
+          echo "smoke test ok"

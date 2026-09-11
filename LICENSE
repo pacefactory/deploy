@@ -1,0 +1,15 @@
+Pacefactory SCV2 deployment bootstrap
+
+Copyright (c) Pacefactory Inc. All rights reserved.
+
+install.sh and the other files in this repository are provided as part of the
+Pacefactory SCV2 product and are governed by the Pacefactory End-User License
+Agreement (EULA) that accompanies the product. The EULA is available from
+Pacefactory (www.pacefactory.com) and ships with the deployment-scripts
+release image as LICENSE. Installing or using this software means you accept
+the EULA.
+
+The software this script installs (the pacefactory/deployment-scripts release
+image and the container images it deploys) is licensed separately under the
+same EULA and is available only to licensed Pacefactory customers with a valid
+Docker Hub access token.
