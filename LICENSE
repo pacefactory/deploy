@@ -1,15 +1,63 @@
-Pacefactory SCV2 deployment bootstrap
+End-User License Agreement
 
-Copyright (c) Pacefactory Inc. All rights reserved.
+END-USER LICENSE AGREEMENT FOR PRODUCTS MANUFACTURED AND/OR SOLD BY PACEFACTORY INC.
 
-install.sh and the other files in this repository are provided as part of the
-Pacefactory SCV2 product and are governed by the Pacefactory End-User License
-Agreement (EULA) that accompanies the product. The EULA is available from
-Pacefactory (www.pacefactory.com) and ships with the deployment-scripts
-release image as LICENSE. Installing or using this software means you accept
-the EULA.
+Version: 3-Nov-2021
 
-The software this script installs (the pacefactory/deployment-scripts release
-image and the container images it deploys) is licensed separately under the
-same EULA and is available only to licensed Pacefactory customers with a valid
-Docker Hub access token.
+This End-User License Agreement (“EULA”) is a legal agreement between you (either an individual or, if purchased or otherwise acquired by or for an entity, an entity) and Pacefactory Inc., (“Pacefactory”) for the Pacefactory equipment and/or software manufactured and/or sold by Pacefactory that accompanies this EULA, which may include associated media, printed materials, “online” or electronic documentation, proprietary protocols and databases, and Internet-based services (“Equipment” and/or “Software”). An amendment or addendum to this EULA may accompany the Equipment and/or Software. A copy of this EULA is available to you on the Pacefactory website (www.pacefactory.com) and available from Pacefactory if requested in writing. In the event of any errors, omissions or other discrepancies between this EULA, and any amendments or addendums accompanying this EULA, and the EULA made available by Pacefactory on its website, the terms of the latter shall control.
+YOU AGREE TO BE BOUND BY THE TERMS OF THIS EULA BY INSTALLING OR IN ANY WAY USING PACEFACTORY EQUIPMENT AND/OR SOFTWARE. IF YOU DO NOT AGREE, DO NOT INSTALL OR IN ANY WAY USE THE EQUIPMENT AND/OR SOFTWARE; YOU MUST RETURN THE EQUIPMENT AND/OR SOFTWARE TO PACEFACTORY WITHIN TEN (10) DAYS. YOU MAY BE ELIGIBLE FOR A REFUND ACCORDING TO THE TERMS OF YOUR PURCHASE AGREEMENT.
+
+1. LICENSE: Pacefactory grants you a single non-transferable and non-exclusive license to use the Equipment and/or Software subject to all the terms and conditions of this EULA. All rights not specifically granted to you by this EULA shall remain with Pacefactory. No rights are granted to you to sublicense, rent or market the Equipment and/or Software. No rights are granted to you under any patents, patent applications, trade secrets or other proprietary rights.
+
+The Software accompanying this EULA is licensed by Pacefactory, but Pacefactory retains ownership of the Software itself, except for those parts which may be owned in whole, or in part by a third party. The rights granted under the terms of the EULA include any Software upgrades that replace and/or supplement the original Software, unless such upgrade contains a separate license. The provisions included in this EULA, including all reservations of rights and limitations of liabilities, extend to Software provided under this EULA by both Pacefactory and any third-party provider.
+
+2. LICENSE RESTRICTIONS: ALL EQUIPMENT AND/OR SOFTWARE PROVIDED TO YOU UNDER THIS EULA SHALL BE USED SOLELY FOR SAFETY PURPOSES AND/OR EFFICIENCY PURPOSES AT YOUR FACILITIES ONLY. Equipment and/or Software is to be used only under your direction. You may install, use, access, and run one copy of the Software on only a single computer, such as a workstation, except for Web reports viewed from a client PC on your network. You may not rent, lease, or loan the Equipment and/or Software, use the Equipment and/or Software for supporting third party use of the Equipment and/or Software, time share the Equipment and/or Software or provide service bureau use.
+
+You may not in any way clone, reverse engineer, decompile, or disassemble the Equipment and/or Software, except and only to the extent that such activity is expressly permitted by this EULA and by applicable law notwithstanding this limitation. Disassembly, changes or modifications to the Equipment and/or Software not expressly approved by Pacefactory could void the user’s warranty and authority to operate the equipment.
+
+3. SOFTWARE SUBSCRIPTION SERVICE: During any paid SUBSCRIPTION Service term, Pacefactory shall provide service for the Software consisting of: delivering subsequent releases of the Software, if any; exerting reasonable efforts to both (a) provide, within a reasonable time, workarounds for any material programming errors in the current release of the Software that are directly attributable to Pacefactory, and (b) correct such errors in the next available release, subject to you providing Pacefactory with sufficient information to identify the errors. During this same paid SUBSCRIPTION Service term, you shall also be entitled to receive technical support for the current release of the Software.
+
+4. CONFIDENTIALITY AND NON-DISCLOSURE: Provisions of this Article shall survive any termination of this EULA.
+
+(A) Equipment and/or Software
+You acknowledge that all Equipment and/or Software accompanying this EULA are proprietary products of Pacefactory or its suppliers. All Software shall remain the property of Pacefactory. You will not disclose or otherwise make available to any third party the Equipment and/or Software, any modified or derived works therefrom, or information contained therein, in any form, except to your employees and users for purposes limited to and specifically related to your use of the Equipment and/or Software in accordance with this EULA. You shall take appropriate action by instruction or signed agreements with such employees and users to satisfy your obligations under this EULA. If for any reason you or your employees or users gain access to Pacefactory materials containing any confidential or proprietary marking, or Pacefactory software source code to which you do not have a right of access under a written agreement between you and Pacefactory, you agree to not examine, use, copy, or keep such items, but shall return them promptly to Pacefactory. Your obligations of confidentiality and nondisclosure shall apply to all forms of Equipment and/or Software received.
+
+(B) Injunctive Relief
+Because harm not adequately compensable might result from unauthorized disclosure of proprietary or confidential information, Pacefactory may seek injunctive relief if you breach your obligations of confidentiality and nondisclosure under this EULA.
+
+5. PATENT AND COPYRIGHT: All or parts of the Equipment and/or Software may have been patented or copyrighted by Pacefactory or third-party providers. Patent or copyright notices have been included in the Software for protective purposes and such notices shall not be construed as causing publication of the Software.
+
+6. CHARGES: You agree to pay all charges arising from the license of the Equipment and/or Software. In addition, you agree to pay, or reimburse Pacefactory for paying, all taxes (except incomes taxes) and other government charges based on or measured by the charges set forth in this EULA, or based on the Equipment and/or Software, its use, and any services provided herein, now or hereafter imposed by any governmental authority, including but not limited to Provincial or State Sales Tax, Goods and Services Tax, Harmonized Sales Tax, and Use or Gross Receipt taxes.
+
+7. LIMITED WARRANTY: Pacefactory warrants that all Pacefactory products will be substantially free from defects in material and workmanship. In the event of a breach of this warranty, provided that Pacefactory is notified of the defects within 12 months of shipment or before the expiry of any extended warranty purchased from Pacefactory, Pacefactory will exert reasonable efforts to correct the defects in materials and/or workmanship. These efforts will include repair or replacement of the defective part at customer’s location or at Pacefactory, such determination at Pacefactory’s discretion. Customer must return any equipment for repair in its original packaging. PACEFACTORY will cover shipping costs by ground courier to and from customer’s location should PACEFACTORY ask the customer to return the part to PACEFACTORY for repair.
+
+Pacefactory warrants that all Software will conform in all material respects to its published specifications when operated on and with the Equipment specified. In the event of a breach of this warranty, provided that Pacefactory is notified of the defects within the Initial SUBSCRIPTION Period, Pacefactory will, at its option, exert reasonable efforts to correct the defects, replace the Software, or terminate the EULA and refund any charges paid by you for the Software.
+
+8. DISCLAIMER OF WARRANTIES, LIABILITIES, INDEMNIFICATION: The limited warranty that appears above is the only express warranty made to you and is provided in lieu of any other express warranties or similar obligations, if any, created by any advertising, documentation, packaging, or other communications.
+
+PACEFACTORY MAKES NO OTHER WARRANTIES OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. PACEFACTORY WILL IN NO EVENT BE LIABLE FOR DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES ARISING FROM THE USE OF THIS EQUIPMENT AND/OR SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. SPECIFICALLY, PACEFACTORY IS NOT LIABLE FOR ANY COSTS, SUCH AS LOST PROFITS OR REVENUE, LOSS OF EQUIPMENT, LOSS OF SOFTWARE, LOSS OF DATA, COSTS OF SUBSTITUTES, CLAIMS BY THIRD PARTIES, PERSONAL INJURY OR OTHERWISE, ARISING OUT OF OR RELATED TO YOUR USE OR INABILITY TO USE PACEFACTORY EQUIPMENT AND/OR SOFTWARE, HOWEVER CAUSED. PACEFACTORY DOES NOT WARRANT THAT THE OPERATION OF THE PACEFACTORY EQUIPMENT AND/OR SOFTWARE WILL BE UNINTERRUPTED OR ERROR-FREE OR THAT DEFECTS WILL BE CORRECTED. NO ORAL OR WRITTEN INFORMATION OR ADVICE GIVEN BY PACEFACTORY OR A PACEFACTORY AUTHORIZED REPRESENTATIVE SHALL CREATE A WARRANTY BEYOND THAT SPECIFIED IN THIS EULA.
+
+PACEFACTORY SHALL NOT BE LIABLE TO YOU FOR ANY CLAIM WHICH IS BASED UPON THE USE OF THE EQUIPMENT AND/OR SOFTWARE, OR ANY PART OF IT, IN CONNECTION WITH EQUIPMENT, SOFTWARE, OR DEVICES NOT FURNISHED BY PACEFACTORY, OR IN ANY MANNER FOR WHICH THE EQUIPMENT AND/OR SOFTWARE WAS NOT DESIGNED, OR IN ANY MANNER FOR WHICH THE EQUIPMENT AND/OR SOFTWARE HAS BEEN MODIFIED BY OR FOR YOU.
+
+YOU ARE RESPONSIBLE FOR THE SELECTION OF EQUIPMENT AND/OR SOFTWARE TO ACHIEVE ITS INTENDED RESULTS, USE OF THE EQUIPMENT AND/OR SOFTWARE, AND THE RESULTS OBTAINED THEREFROM. YOU AGREE TO INDEMNIFY AND HOLD PACEFACTORY AND ITS SUPPLIERS HARMLESS WITH RESPECT TO ALL CLAIMS, INCLUDING THOSE BY THIRD PARTIES, ARISING OUT OF YOUR USE OF THE RESULTS OF OPERATION OF THE EQUIPMENT AND/OR SOFTWARE.
+
+9. TERM: You shall have the right to use the Equipment and/or Software for the term of the purchase agreement, subject to the provisions of this EULA. You understand and agree that the SUBSCRIPTION Service for any Software will terminate automatically upon expiration of the Initial SUBSCRIPTION Period included with the purchase of the Software. Thereafter, the SUBSCRIPTION Service term may be renewed at the then current price and for the then-applicable term, as long as Pacefactory offers such SUBSCRIPTION Service, in accordance with the provisions of this EULA.
+
+10. TERMINATION: This EULA is effective until terminated. Termination of this EULA shall not relieve you of any obligations under any invoiced fees.
+    This EULA may be terminated automatically without notice from Pacefactory as follows:
+
+(A) by you any time; or by either
+
+(B.1) non-payment by you of any amount due under applicable invoices for the Equipment and/or Software, which non-payment continues for a period of thirty (30) days; or
+
+(B.2) non-performance by you of any other term or condition of this EULA, or of any other agreement between you and Pacefactory related to the Equipment and/or Software, subject to the provisions of this EULA.
+
+11. ASSIGNMENT: You may not assign this EULA without the written consent of Pacefactory.
+
+12. APPLICABLE LAW: This EULA shall be deemed to have been made in Ontario and is governed by, and construed and enforced in accordance with, the laws of the Province of Ontario, Canada, and the federal laws applicable therein. You and Pacefactory attorn to the non-exclusive venue and jurisdiction of the Courts of Ontario in respect of any matter or dispute arising from this EULA and its subject matter.
+
+13. SURVIVAL OF AGREEMENTS: Notwithstanding the termination or completion of this EULA, all indemnities, warranties, restrictions and duties of confidentiality and non-disclosure in this EULA will continue in full force and effect to the extent required for their full observance and performance.
+
+14. ENTIRE AGREEMENT; GOVERNING LANGUAGE: This EULA, including any amendments and addendums that may accompany it, constitute the entire agreement between you and Pacefactory related to the Equipment and Software and any related support services, and supersedes all prior or contemporaneous oral and written communications, proposals and representations of any kind with respect to the Equipment, Software, and any other subject matter covered by this EULA. The terms and conditions of any subsequent invoice, waiver, amendment or other such agreement used by Pacefactory in connection with this EULA shall be considered valid and enforceable to the extent that such terms and conditions can be interpreted as consistent with this EULA. If such terms and conditions cannot be interpreted as consistent with this EULA, the terms of this EULA shall control. If any provision of this EULA is held to be void, invalid, unenforceable or illegal, the other provisions shall continue in full force and effect.
+
+Any translation of this License is done for local requirements and in the event of a dispute between the English and any non-English versions, the English version of this License shall govern.
