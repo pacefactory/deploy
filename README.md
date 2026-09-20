@@ -27,12 +27,18 @@ as the next steps.
   (`docker compose version`).
 - The user running the one-liner is in the `docker` group: `docker info` works
   without `sudo`. The script never uses `sudo`.
-- Docker Hub access as the organization user `pacefactory`, one of:
-  - a per-server Docker Organization Access Token stored as
+- Docker Hub credentials with pull access to the Pacefactory repositories, one
+  of:
+  - **Server:** a per-server Docker Organization Access Token stored as
     `export DOCKER_OAT=dckr_oat_...` in `~/scv2/docker_oat.sh` (mode 700). How
     tokens are issued is described in the Pacefactory Deployment Guide, not
     here. The script logs in with it and never prints or copies it;
-  - or an existing `docker login` as `pacefactory` on the server.
+  - or an existing `docker login` as the organization user `pacefactory`;
+  - **Developer machine:** your own Docker Hub account, once it is a member of
+    the Pacefactory organization with pull access. Run `docker login` and the
+    script uses that login as it stands: no token file is needed and your login
+    is neither replaced nor logged out. Where a token file is present as well
+    and you want your own account used instead, set `PF_DOCKER_AUTH=existing`.
 - Egress to Docker Hub (`registry-1.docker.io`, `auth.docker.io` and the
   Docker Hub CDN) over HTTPS 443, directly or via the site proxy (`source
   ~/connect-to-proxy.sh` first where the site uses one), plus
@@ -51,6 +57,8 @@ The script never prompts and takes no positional arguments.
 | `PF_RELEASE` | `latest` | Tag to install. `PF_RELEASE=v1.2.3` pins a release or rolls back to it; `sha-<short>` tags exist for every build. |
 | `PF_REMOVE_GIT` | `false` | `true` deletes a converted checkout's `.git` directory after a successful sync. |
 | `PF_OAT_FILE` | `$HOME/scv2/docker_oat.sh` | Token file sourced for `docker login`. |
+| `PF_DOCKER_USER` | `pacefactory` | User the token login uses. Only a token login sets a user; an existing `docker login` is used whoever it belongs to. |
+| `PF_DOCKER_AUTH` | `auto` | Which credentials to use. `auto`: token file, else `DOCKER_OAT`, else whatever login Docker already holds, whoever it belongs to. `oat`: organization token only, and a login as any other user is rejected (the strict server posture). `existing`: the login Docker already holds; the token file and `DOCKER_OAT` are ignored. |
 | `DOCKER_OAT` | unset | Honoured if already exported. Never pass a token as an argument. |
 
 Examples:
@@ -60,6 +68,9 @@ Examples:
 PF_RELEASE=v1.4.0 bash -c "$(curl -fsSL https://get.pacefactory.dev/install.sh)"
 # or, keeping the pipe form
 curl -fsSL https://get.pacefactory.dev/install.sh | PF_RELEASE=v1.4.0 bash
+# developer machine: install under your own Docker Hub login, ignoring any
+# token file this machine happens to carry
+curl -fsSL https://get.pacefactory.dev/install.sh | PF_DOCKER_AUTH=existing bash
 ```
 
 ## Sites that forbid pipe-to-shell

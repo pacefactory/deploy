@@ -14,6 +14,8 @@
 #   PF_RELEASE       tag to install          default latest (a vX.Y.Z tag pins or rolls back)
 #   PF_REMOVE_GIT    true removes a converted checkout's .git directory; default false
 #   PF_OAT_FILE      Docker Hub token file   default $HOME/scv2/docker_oat.sh
+#   PF_DOCKER_USER   user for a token login  default pacefactory
+#   PF_DOCKER_AUTH   credentials to use      default auto (auto|oat|existing, see below)
 #   DOCKER_OAT       honoured if already exported (never pass it as an argument)
 #
 # Flags (for testing; not needed on servers):
@@ -23,8 +25,8 @@
 # What it does:
 #   1. preflight: docker on PATH, `docker info` works for this user without
 #      sudo, `docker compose version` works
-#   2. Docker Hub login as the organization user 'pacefactory' with this
-#      server's Organization Access Token (see below); never `docker logout`
+#   2. Docker Hub authentication: this server's Organization Access Token, or
+#      a developer's own Docker Hub login (see below); never `docker logout`
 #   3. docker pull $PF_IMAGE:$PF_RELEASE
 #   4. docker create + docker cp into a temporary directory, docker rm
 #   5. hand off to the updater shipped in the image:
@@ -34,15 +36,22 @@
 #      fragments are never touched) and prints the next steps
 #      (./build.sh, ./update.sh). This script runs neither.
 #
-# Docker Hub authentication (production convention, Pacefactory Deployment
-# Guide): each server has its own non-expiring Docker Organization Access
-# Token with image-pull scope, stored as `export DOCKER_OAT=dckr_oat_...` in
-# ~/scv2/docker_oat.sh (mode 700). Order of precedence:
+# Docker Hub authentication. Two supported routes:
+#   Server (production convention, Pacefactory Deployment Guide): the server has
+#   its own non-expiring Docker Organization Access Token with image-pull scope,
+#   stored as `export DOCKER_OAT=dckr_oat_...` in ~/scv2/docker_oat.sh (mode 700).
+#   Developer machine: a personal Docker Hub account that is a member of the
+#   Pacefactory organization with pull access, logged in with `docker login`.
+# Order of precedence (PF_DOCKER_AUTH=auto, the default):
 #   PF_OAT_FILE exists  -> source it in a subshell, docker login --password-stdin
 #   DOCKER_OAT exported -> docker login --password-stdin
-#   already logged in as pacefactory -> proceed
-#   logged in as legacy pfclient     -> warn, proceed if the pull succeeds
-#   otherwise                        -> fail with remediation
+#   already logged in as $PF_DOCKER_USER -> proceed
+#   logged in as legacy pfclient         -> warn, proceed if the pull succeeds
+#   logged in as any other user          -> proceed on that account's access
+#   not logged in at all                 -> fail with remediation
+# PF_DOCKER_AUTH=oat rejects a login that is not $PF_DOCKER_USER (the strict
+# server posture); PF_DOCKER_AUTH=existing uses the login the daemon already
+# holds and ignores PF_OAT_FILE and DOCKER_OAT.
 # The token is never echoed, never written, never passed on a command line.
 #
 # Network: only Docker Hub, through the docker CLI. No curl inside. Nothing is
@@ -57,7 +66,8 @@ PF_IMAGE="${PF_IMAGE:-pacefactory/deployment-scripts}"
 PF_RELEASE="${PF_RELEASE:-latest}"
 PF_REMOVE_GIT="${PF_REMOVE_GIT:-false}"
 PF_OAT_FILE="${PF_OAT_FILE:-$HOME/scv2/docker_oat.sh}"
-PF_DOCKER_USER="pacefactory"
+PF_DOCKER_USER="${PF_DOCKER_USER:-pacefactory}"
+PF_DOCKER_AUTH="${PF_DOCKER_AUTH:-auto}"
 
 DRY_RUN=false
 TMP_DIR=""
@@ -102,6 +112,8 @@ validate_config() {
   [[ "$PF_RELEASE" =~ ^[A-Za-z0-9_][A-Za-z0-9_.-]*$ ]] || die "PF_RELEASE '$PF_RELEASE' is not a valid image tag"
   case "$PF_REMOVE_GIT" in true|false) ;; *) die "PF_REMOVE_GIT must be 'true' or 'false' (got '$PF_REMOVE_GIT')" ;; esac
   [[ "$PF_OAT_FILE" == /* ]] || die "PF_OAT_FILE must be an absolute path (got '$PF_OAT_FILE')"
+  [[ "$PF_DOCKER_USER" =~ ^[A-Za-z0-9][A-Za-z0-9_.-]*$ ]] || die "PF_DOCKER_USER '$PF_DOCKER_USER' is not a valid Docker Hub user name"
+  case "$PF_DOCKER_AUTH" in auto|oat|existing) ;; *) die "PF_DOCKER_AUTH must be 'auto', 'oat' or 'existing' (got '$PF_DOCKER_AUTH')" ;; esac
 }
 
 print_config() {
@@ -111,6 +123,7 @@ print_config() {
   log "install dir  : $PF_INSTALL_DIR"
   log "token file   : $PF_OAT_FILE ($([[ -f "$PF_OAT_FILE" ]] && echo present || echo absent))"
   log "DOCKER_OAT   : $oat_state"
+  log "auth mode    : $PF_DOCKER_AUTH (token login user '$PF_DOCKER_USER')"
   log "remove .git  : $PF_REMOVE_GIT"
 }
 
@@ -138,17 +151,30 @@ EOF
 
 # ---- 2. authentication -----------------------------------------------------
 
+# Both routes, minus the one the auth mode has ruled out.
 remediation() {
-  cat >&2 <<EOF
-
-Docker Hub login as '$PF_DOCKER_USER' is required and no usable credential was found.
-Remediation:
-  1. Obtain a per-server Docker Organization Access Token (image-pull scope) for
-     this server, following the Pacefactory Deployment Guide.
-  2. Store it as $PF_OAT_FILE (mode 700) containing one line:
-       export DOCKER_OAT=dckr_oat_...
-  3. Re-run:  curl -fsSL https://get.pacefactory.dev/install.sh | bash
-EOF
+  {
+    echo
+    echo "Docker Hub credentials with pull access to the Pacefactory repositories are"
+    echo "required and none were found."
+    echo "Remediation:"
+    if [[ "$PF_DOCKER_AUTH" != "existing" ]]; then
+      echo "  Server - per-server Organization Access Token:"
+      echo "    1. Obtain an Organization Access Token (image-pull scope) for this server,"
+      echo "       following the Pacefactory Deployment Guide."
+      echo "    2. Store it as $PF_OAT_FILE (mode 700) containing one line:"
+      echo "         export DOCKER_OAT=dckr_oat_..."
+    fi
+    if [[ "$PF_DOCKER_AUTH" != "oat" ]]; then
+      echo "  Developer machine - your own Docker Hub account:"
+      echo "    1. Have your account added to the Pacefactory organization with pull"
+      echo "       access on the repositories you need."
+      echo "    2. Log in with it:  docker login"
+      echo "       Where a token file is also present and you want your own account"
+      echo "       used instead, set PF_DOCKER_AUTH=existing."
+    fi
+    echo "  Then re-run:  curl -fsSL https://get.pacefactory.dev/install.sh | bash"
+  } >&2
 }
 
 docker_username() {
@@ -182,23 +208,25 @@ login_with_token_file() {
 
 authenticate() {
   local user
-  if [[ -f "$PF_OAT_FILE" ]]; then
-    log "logging in to Docker Hub as '$PF_DOCKER_USER' with $PF_OAT_FILE"
-    if login_with_token_file "$PF_OAT_FILE"; then
-      return 0
+  if [[ "$PF_DOCKER_AUTH" != "existing" ]]; then
+    if [[ -f "$PF_OAT_FILE" ]]; then
+      log "logging in to Docker Hub as '$PF_DOCKER_USER' with $PF_OAT_FILE"
+      if login_with_token_file "$PF_OAT_FILE"; then
+        return 0
+      fi
+      warn "docker login with $PF_OAT_FILE failed: the token may have been revoked or lack image-pull scope."
+      remediation
+      exit 1
     fi
-    warn "docker login with $PF_OAT_FILE failed: the token may have been revoked or lack image-pull scope."
-    remediation
-    exit 1
-  fi
-  if [[ -n "${DOCKER_OAT:-}" ]]; then
-    log "logging in to Docker Hub as '$PF_DOCKER_USER' with DOCKER_OAT from the environment"
-    if login_with_env_token; then
-      return 0
+    if [[ -n "${DOCKER_OAT:-}" ]]; then
+      log "logging in to Docker Hub as '$PF_DOCKER_USER' with DOCKER_OAT from the environment"
+      if login_with_env_token; then
+        return 0
+      fi
+      warn "docker login with DOCKER_OAT failed: the token may have been revoked or lack image-pull scope."
+      remediation
+      exit 1
     fi
-    warn "docker login with DOCKER_OAT failed: the token may have been revoked or lack image-pull scope."
-    remediation
-    exit 1
   fi
   user="$(docker_username)"
   case "$user" in
@@ -206,18 +234,26 @@ authenticate() {
       log "already logged in to Docker Hub as '$user'"
       ;;
     pfclient)
-      warn "this server is logged in to Docker Hub as the legacy user 'pfclient' (device-code login)."
-      warn "move it to a per-server Organization Access Token in $PF_OAT_FILE (Pacefactory Deployment Guide). Continuing."
+      warn "this machine is logged in to Docker Hub as the legacy user 'pfclient' (device-code login)."
+      warn "servers move to a per-server Organization Access Token in $PF_OAT_FILE (Pacefactory Deployment Guide). Continuing."
       ;;
     "")
-      warn "not logged in to Docker Hub and no token file at $PF_OAT_FILE"
+      if [[ "$PF_DOCKER_AUTH" == "existing" ]]; then
+        warn "not logged in to Docker Hub (PF_DOCKER_AUTH=existing ignores $PF_OAT_FILE and DOCKER_OAT)"
+      else
+        warn "not logged in to Docker Hub and no token file at $PF_OAT_FILE"
+      fi
       remediation
       exit 1
       ;;
     *)
-      warn "logged in to Docker Hub as '$user', not '$PF_DOCKER_USER', and no token file at $PF_OAT_FILE"
-      remediation
-      exit 1
+      if [[ "$PF_DOCKER_AUTH" == "oat" ]]; then
+        warn "logged in to Docker Hub as '$user', not '$PF_DOCKER_USER', and no token file at $PF_OAT_FILE (PF_DOCKER_AUTH=oat)"
+        remediation
+        exit 1
+      fi
+      log "using the existing Docker Hub login '$user' (a personal account; it needs pull"
+      log "  access to the Pacefactory repositories)"
       ;;
   esac
 }
@@ -230,10 +266,14 @@ pull_release() {
   if ! docker pull "$ref"; then
     cat >&2 <<EOF
 [pacefactory install] ERROR: could not pull $ref.
-  This server's Docker Hub token may have been revoked, may lack image-pull
-  scope on $PF_IMAGE, or the release tag '$PF_RELEASE' may not exist.
-  The token lives in $PF_OAT_FILE (Pacefactory Deployment Guide). Fix the token
-  or the tag, then re-run:  curl -fsSL https://get.pacefactory.dev/install.sh | bash
+  The credentials in use may lack image-pull scope on $PF_IMAGE, or the release
+  tag '$PF_RELEASE' may not exist.
+  On a server: the Organization Access Token in $PF_OAT_FILE may have been
+  revoked (Pacefactory Deployment Guide).
+  On a developer machine: the account logged in may not be a member of the
+  Pacefactory organization, or may not have pull access on $PF_IMAGE.
+  Fix the credentials or the tag, then re-run:
+    curl -fsSL https://get.pacefactory.dev/install.sh | bash
 EOF
     exit 1
   fi
@@ -259,7 +299,7 @@ extract_release() {
 
 hand_off() {
   mkdir -p "$PF_INSTALL_DIR"
-  export PF_INSTALL_DIR PF_IMAGE PF_RELEASE PF_REMOVE_GIT PF_OAT_FILE
+  export PF_INSTALL_DIR PF_IMAGE PF_RELEASE PF_REMOVE_GIT PF_OAT_FILE PF_DOCKER_USER PF_DOCKER_AUTH
   log "handing off to scripts/release/fetch-release.sh --from $TMP_DIR"
   # Not exec'd on purpose: the EXIT trap must still remove the temp dir. stdin
   # is /dev/null so the updater can never read from the pipe this script came in on.
@@ -276,7 +316,8 @@ main() {
   print_config
   if [[ "$DRY_RUN" == "true" ]]; then
     log "dry run: would run preflight (docker info, docker compose version),"
-    log "  authenticate (token file / DOCKER_OAT / existing login), docker pull $PF_IMAGE:$PF_RELEASE,"
+    log "  authenticate (PF_DOCKER_AUTH=$PF_DOCKER_AUTH: token file / DOCKER_OAT / existing login),"
+    log "  docker pull $PF_IMAGE:$PF_RELEASE,"
     log "  docker create + docker cp + docker rm, then fetch-release.sh --from <tmp> into $PF_INSTALL_DIR."
     log "dry run: nothing executed."
     return 0
