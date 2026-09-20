@@ -177,8 +177,25 @@ remediation() {
   } >&2
 }
 
+# The user Docker Hub reports this machine as logged in as, '' if none.
+#
+# A --format template that names a field the struct does not have fails the
+# whole command, so a non-zero exit means "wrong field name for this CLI", not
+# "logged out". Docker CLI 29 renamed the field from .Username to .UserName;
+# older CLIs have only .Username. Asking a 29 CLI for .Username therefore
+# reports every machine as logged out, whatever `docker info` prints.
+# Both are tried, then the line the human-readable output carries, which is
+# what an operator sees when they check by hand.
 docker_username() {
-  docker info --format '{{.Username}}' 2>/dev/null || true
+  local u t
+  for t in '{{.UserName}}' '{{.Username}}'; do
+    if u="$(docker info --format "$t" 2>/dev/null)" && [[ -n "$u" ]]; then
+      printf '%s\n' "$u"
+      return 0
+    fi
+  done
+  docker info 2>/dev/null | sed -n 's/^[[:space:]]*Username:[[:space:]]*//p' | head -1
+  return 0
 }
 
 # Login with the token exported in the environment; stdout ("Login Succeeded")
