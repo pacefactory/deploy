@@ -40,6 +40,7 @@ jobs:
           grep -q 'install dir  : /home/pf/scv2/git_clones/deployment-scripts' <<<"$out"
           grep -q 'token file   : /home/pf/scv2/docker_oat.sh (absent)' <<<"$out"
           grep -q 'DOCKER_OAT   : unset' <<<"$out"
+          grep -q "auth mode    : auto (token login user 'pacefactory')" <<<"$out"
           grep -q 'dry run: nothing executed' <<<"$out"
           # environment overrides, token never printed
           out="$(PF_INSTALL_DIR=/opt/pf PF_IMAGE=pacefactory/other PF_RELEASE=v1.2.3 PF_REMOVE_GIT=true PF_OAT_FILE=/opt/oat.sh DOCKER_OAT=dckr_oat_secretvalue bash install.sh --dry-run)"
@@ -50,12 +51,25 @@ jobs:
           ! grep -q 'secretvalue' <<<"$out"
           # piped invocation, as curl | bash delivers it
           bash -s -- --dry-run < install.sh | grep -q 'dry run: nothing executed'
+          # developer authentication: a personal Docker Hub login is a supported route
+          out="$(HOME=/home/pf PF_DOCKER_AUTH=existing PF_DOCKER_USER=devuser bash install.sh --dry-run)"
+          grep -q "auth mode    : existing (token login user 'devuser')" <<<"$out"
+          grep -q 'PF_DOCKER_AUTH=existing' <<<"$out"
           # invalid configuration is rejected
           ! PF_REMOVE_GIT=maybe bash install.sh --dry-run
           ! PF_INSTALL_DIR=relative/path bash install.sh --dry-run
+          ! PF_DOCKER_AUTH=maybe bash install.sh --dry-run
+          ! PF_DOCKER_USER='bad user' bash install.sh --dry-run
           ! bash install.sh --dry-run positional-arg
-          # a truncated download executes nothing (main is the last line)
-          if head -c 3000 install.sh | bash 2>/dev/null; then echo "truncated script should fail"; exit 1; fi
-          ! head -c 3000 install.sh | bash 2>&1 | grep -q 'pacefactory install'
+          # a truncated download executes nothing (main is the last line): the whole
+          # script minus that line defines functions and runs none of them, and a cut
+          # inside a function body is a syntax error. Anchored on a function rather
+          # than a byte count, which moves whenever the header changes length.
+          out="$(head -n -1 install.sh | bash 2>&1)" || { echo "script without its last line should still parse"; exit 1; }
+          [[ -z "$out" ]] || { echo "truncated script produced output: $out"; exit 1; }
+          cut=$(( $(grep -n '^authenticate() {' install.sh | cut -d: -f1) + 3 ))
+          if head -n "$cut" install.sh | bash 2>/dev/null; then echo "truncated script should fail"; exit 1; fi
+          ! head -n "$cut" install.sh | bash 2>&1 | grep -q 'pacefactory install'
           bash install.sh --help | grep -q 'curl -fsSL https://get.pacefactory.dev/install.sh'
+          bash install.sh --help | grep -q 'PF_DOCKER_AUTH'
           echo "smoke test ok"
