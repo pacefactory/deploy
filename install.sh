@@ -6,8 +6,10 @@
 #
 # Idempotent: run it on a fresh server, on a server that still holds the old
 # git checkout (converted in place), or on a broken install to repair it.
-# It never prompts (stdin is this script when piped) and takes no positional
-# arguments; configuration is by environment variables only:
+# It takes no positional arguments and prompts at most once: when no Docker Hub
+# credentials are found it offers a one-time web login (see below), read from
+# /dev/tty because stdin is this script when piped. With no terminal it never
+# prompts. Configuration is by environment variables only:
 #
 #   PF_INSTALL_DIR   install root            default $HOME/scv2/git_clones/deployment-scripts
 #   PF_IMAGE         release image           default pacefactory/deployment-scripts
@@ -48,11 +50,20 @@
 #   already logged in as $PF_DOCKER_USER -> proceed
 #   logged in as legacy pfclient         -> warn, proceed if the pull succeeds
 #   logged in as any other user          -> proceed on that account's access
-#   not logged in at all                 -> fail with remediation
+#   not logged in at all                 -> offer a one-time web login (below);
+#                                           declined or no terminal -> fail with
+#                                           remediation
 # PF_DOCKER_AUTH=oat rejects a login that is not $PF_DOCKER_USER (the strict
 # server posture); PF_DOCKER_AUTH=existing uses the login the daemon already
 # holds and ignores PF_OAT_FILE and DOCKER_OAT.
 # The token is never echoed, never written, never passed on a command line.
+#
+# One-time web login (production fallback when a server has no token yet): a
+# plain `docker login` on the terminal, which shows an 8-character device
+# confirmation code (XXXX-XXXX). The operator reads the code to Pacefactory
+# support, who approve it with a Pacefactory account at
+# https://login.docker.com/activate. The prompt defaults to yes; it is not
+# offered under PF_DOCKER_AUTH=oat, whose login must be $PF_DOCKER_USER's token.
 #
 # Network: only Docker Hub, through the docker CLI. No curl inside. Nothing is
 # written outside the temporary directory and PF_INSTALL_DIR.
@@ -151,12 +162,18 @@ EOF
 
 # ---- 2. authentication -----------------------------------------------------
 
-# Both routes, minus the one the auth mode has ruled out.
-remediation() {
+# The problem statement; printed before the web-login offer.
+remediation_header() {
   {
     echo
     echo "Docker Hub credentials with pull access to the Pacefactory repositories are"
     echo "required and none were found."
+  } >&2
+}
+
+# Both routes, minus the one the auth mode has ruled out.
+remediation_routes() {
+  {
     echo "Remediation:"
     if [[ "$PF_DOCKER_AUTH" != "existing" ]]; then
       echo "  Server - per-server Organization Access Token:"
@@ -174,6 +191,26 @@ remediation() {
       echo "       used instead, set PF_DOCKER_AUTH=existing."
     fi
     echo "  Then re-run:  curl -fsSL https://get.pacefactory.dev/install.sh | bash"
+  } >&2
+}
+
+remediation() { remediation_header; remediation_routes; }
+
+# Why a one-time web login can fail and what to do; printed before the routes.
+web_login_remediation() {
+  {
+    echo
+    echo "The one-time web login did not complete."
+    echo "Web login remediation:"
+    echo "  - The confirmation code is short-lived and works once. Re-run only while"
+    echo "    Pacefactory support is on the line, and read them the new code at once."
+    echo "  - Support must approve the code at https://login.docker.com/activate with"
+    echo "    a Docker Hub account that has pull access to the Pacefactory repositories."
+    echo "  - If docker login asked for a Username instead of showing a code, this"
+    echo "    Docker CLI has no web-based login: upgrade Docker Engine, or use one of"
+    echo "    the routes below."
+    echo "  - This server must reach login.docker.com as well as Docker Hub over"
+    echo "    HTTPS 443 (source ~/connect-to-proxy.sh first where the site uses a proxy)."
   } >&2
 }
 
@@ -223,6 +260,33 @@ login_with_token_file() {
   )
 }
 
+# True when a controlling terminal can be opened: stdin is the script itself
+# under curl | bash, so prompts and the interactive login go through /dev/tty.
+have_tty() { { : </dev/tty; } 2>/dev/null; }
+
+# Ask on the terminal; Enter means yes. 0 = yes, 1 = no (or the terminal closed).
+confirm_web_login() {
+  local answer
+  while true; do
+    printf '%s' "Proceed with one-time web login? (requires live support with Pacefactory) [Y/n] " >/dev/tty
+    IFS= read -r answer </dev/tty || return 1
+    case "${answer,,}" in
+      ""|y|yes) return 0 ;;
+      n|no) return 1 ;;
+      *) printf '%s\n' "Please answer y or n." >/dev/tty ;;
+    esac
+  done
+}
+
+# A plain `docker login` (no username) is Docker Hub's web-based device-code
+# login; it refuses to run without a terminal on stdin.
+web_login() {
+  log "starting one-time web login: docker login will show a one-time device"
+  log "  confirmation code (XXXX-XXXX). Read it to Pacefactory support and keep this"
+  log "  terminal open until it reports 'Login Succeeded'."
+  docker login </dev/tty
+}
+
 authenticate() {
   local user
   if [[ "$PF_DOCKER_AUTH" != "existing" ]]; then
@@ -260,8 +324,20 @@ authenticate() {
       else
         warn "not logged in to Docker Hub and no token file at $PF_OAT_FILE"
       fi
-      remediation
-      exit 1
+      remediation_header
+      if [[ "$PF_DOCKER_AUTH" == "oat" ]] || ! have_tty || ! confirm_web_login; then
+        remediation_routes
+        exit 1
+      fi
+      if ! web_login; then
+        web_login_remediation
+        remediation_routes
+        exit 1
+      fi
+      user="$(docker_username)"
+      log "one-time web login succeeded as '${user:-unknown}'; it stays stored for this user."
+      log "  For unattended servers, move to a per-server Organization Access Token in"
+      log "  $PF_OAT_FILE (Pacefactory Deployment Guide)."
       ;;
     *)
       if [[ "$PF_DOCKER_AUTH" == "oat" ]]; then
@@ -333,7 +409,8 @@ main() {
   print_config
   if [[ "$DRY_RUN" == "true" ]]; then
     log "dry run: would run preflight (docker info, docker compose version),"
-    log "  authenticate (PF_DOCKER_AUTH=$PF_DOCKER_AUTH: token file / DOCKER_OAT / existing login),"
+    log "  authenticate (PF_DOCKER_AUTH=$PF_DOCKER_AUTH: token file / DOCKER_OAT / existing login,"
+    log "  else offer a one-time web login on the terminal),"
     log "  docker pull $PF_IMAGE:$PF_RELEASE,"
     log "  docker create + docker cp + docker rm, then fetch-release.sh --from <tmp> into $PF_INSTALL_DIR."
     log "dry run: nothing executed."
