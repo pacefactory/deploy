@@ -26,7 +26,7 @@ jobs:
         run: |
           sudo apt-get update -q && sudo apt-get install -y -q shellcheck
           bash -n install.sh
-          shellcheck install.sh
+          shellcheck install.sh tests/auth-prompt.sh
 
       - name: checksum is current
         run: sha256sum -c install.sh.sha256
@@ -73,3 +73,6 @@ jobs:
           bash install.sh --help | grep -q 'curl -fsSL https://get.pacefactory.dev/install.sh'
           bash install.sh --help | grep -q 'PF_DOCKER_AUTH'
           echo "smoke test ok"
+
+      - name: web-login offer (stubbed docker, no Docker Hub)
+        run: bash tests/auth-prompt.sh

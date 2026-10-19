@@ -39,16 +39,28 @@ as the next steps.
     script uses that login as it stands: no token file is needed and your login
     is neither replaced nor logged out. Where a token file is present as well
     and you want your own account used instead, set `PF_DOCKER_AUTH=existing`.
+  - **One-time web login (with live Pacefactory support):** when none of the
+    above is found and the script runs on a terminal, it asks
+    `Proceed with one-time web login? (requires live support with Pacefactory) [Y/n]`
+    (Enter means yes). Yes runs a plain `docker login`, which shows an
+    8-character device confirmation code (`XXXX-XXXX`); read it to Pacefactory
+    support, who approve it at `https://login.docker.com/activate`. The login
+    stays stored for that user. No prints both routes above; a failed web login
+    prints why it can fail, then both routes. Not offered under
+    `PF_DOCKER_AUTH=oat`, nor without a terminal.
 - Egress to Docker Hub (`registry-1.docker.io`, `auth.docker.io` and the
   Docker Hub CDN) over HTTPS 443, directly or via the site proxy (`source
   ~/connect-to-proxy.sh` first where the site uses one), plus
-  `get.pacefactory.dev` for this script only.
+  `get.pacefactory.dev` for this script only, and `login.docker.com` for the
+  one-time web login only.
 - For `build.sh` afterwards: mikefarah `yq` v4 on PATH
   ([Install yq](https://github.com/pacefactory/deployment-scripts/blob/main/docs/how-to/install-yq.md)).
 
 ## Environment variables
 
-The script never prompts and takes no positional arguments.
+The script takes no positional arguments. Its only prompt is the one-time web
+login offer above, read from the terminal (`/dev/tty`), so it works under
+`curl | bash`; without a terminal it never prompts.
 
 | Variable | Default | Purpose |
 |---|---|---|
@@ -105,5 +117,6 @@ inside the install directory; this bootstrap is only for install and repair.
 | `install.sh` | The bootstrap |
 | `install.sh.sha256` | Checksum for the download-verify-run path |
 | `.nojekyll` | Makes GitHub Pages serve `install.sh` verbatim |
-| `.github/workflows/check.yml` | shellcheck, `bash -n`, dry-run smoke test, checksum freshness |
+| `tests/auth-prompt.sh` | Offline test of the web-login offer against a stubbed `docker` |
+| `.github/workflows/check.yml` | shellcheck, `bash -n`, dry-run smoke test, web-login offer test, checksum freshness |
 | `LICENSE` | Provided as part of the Pacefactory SCV2 product under its EULA |
